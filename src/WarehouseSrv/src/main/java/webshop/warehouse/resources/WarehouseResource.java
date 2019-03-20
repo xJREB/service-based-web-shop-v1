@@ -26,6 +26,8 @@ import webshop.warehouse.db.WarehouseRepository;
 @Produces(MediaType.APPLICATION_JSON)
 public class WarehouseResource {
 
+	// TODO Ex2, Task2: Extend this class with warehouse (product availability) resource functionality from the ProductSrv
+
 	private WarehouseRepository warehouseRepository;
 	private Logger log;
 
@@ -34,40 +36,5 @@ public class WarehouseResource {
 		this.log = LoggerFactory.getLogger(WarehouseResource.class);
 		log.info("WarehouseResource instantiated...");
 	}
-
-	// Warehouse resources
-
-	@Path("/products/{id}/availability")
-	@GET
-	@Timed
-	public ProductAvailabilityCheckResponse checkProductAvailability(@PathParam("id") LongParam productId,
-			@QueryParam("amount") @DefaultValue("1") IntParam requestedAmount) {
-
-		log.info("Checking availability for product with ID " + productId.get() + " for the amount of "
-				+ requestedAmount.get() + "...");
-		final int availableAmount = warehouseRepository.getAvailableProductAmount(productId.get());
-
-		if (availableAmount == -1) {
-			final String msg = String.format("Product with ID %d does not exist...", productId.get());
-			throw new WebApplicationException(msg, Status.NOT_FOUND);
-		}
-
-		final int MINIMAL_REMAINING_AMOUNT_NECESSARY = 2;
-		return new ProductAvailabilityCheckResponse(productId.get(),
-				(availableAmount - requestedAmount.get() >= MINIMAL_REMAINING_AMOUNT_NECESSARY), requestedAmount.get());
-	}
-
-	@Path("/products/{id}/availability")
-	@PUT
-	@Timed
-	public BaseResponse updateProductAvailability(@PathParam("id") LongParam productId,
-			@QueryParam("amount") @DefaultValue("1") IntParam amount) {
-
-		log.info("Setting available amount for product with ID " + productId.get() + " to " + amount.get() + "...");
-		warehouseRepository.setAvailableProductAmount(productId.get(), amount.get());
-
-		return new BaseResponse("OK", 200,
-				"Available amount for product with ID " + productId.get() + " successfully updated.");
-	}
-
+	
 }

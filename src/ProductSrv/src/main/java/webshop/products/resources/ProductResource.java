@@ -30,6 +30,8 @@ import io.dropwizard.jersey.params.LongParam;
 import webshop.products.api.BaseResponse;
 import webshop.products.api.NewProductMailRequest;
 import webshop.products.api.Product;
+import webshop.products.api.ProductAvailabilityCheckResponse;
+import webshop.products.api.ProductCategory;
 import webshop.products.db.ProductRepository;
 
 @Path("/")
@@ -82,20 +84,11 @@ public class ProductResource {
 		}
 		final Product createdProduct = productRepository.storeProduct(product);
 
-		// Adding the new product to NotificationSrv DB
-		Invocation.Builder request = restClient.target("http://localhost:8010/new-products").request();
-		request.post(Entity.json(createdProduct), BaseResponse.class);
+		// TODO Ex3, Task1: Invoke NotificationSrv to add the new product to the "new-products" DB
 
-		// Creating a new product mail request for the NotificationSrv
-		NewProductMailRequest newProductMailRequest = new NewProductMailRequest("NEW_PRODUCT_MAIL", createdProduct);
-		request = restClient.target("http://localhost:8010/product-mails").request();
-		request.post(Entity.json(newProductMailRequest), BaseResponse.class);
+		// TODO Ex3, Task2: Invoke NotificationSrv to send a "new-product" mail to the sales department
 
-		// Stock up on 10 copies of the new product
-		request = restClient
-				.target("http://localhost:8070/products/" + createdProduct.getId() + "/availability?amount=10")
-				.request();
-		request.put(Entity.json(""), BaseResponse.class);
+		// TODO Ex3, Task3: Invoke WarehouseSrv to set the availability of the new product to 10 copies
 
 		return new BaseResponse("OK", 201, "Product with ID " + createdProduct.getId() + " successfully created.");
 	}
@@ -118,5 +111,96 @@ public class ProductResource {
 		return new BaseResponse(deleted ? "OK" : "FAILED", deleted ? 202 : 400,
 				deleted ? "Product with ID " + productId.get() + " successfully deleted."
 						: "Failed to delete product with ID " + productId.get() + ".");
+	}
+
+	// Warehouse resources
+
+	@Path("/products/{id}/availability")
+	@GET
+	@Timed
+	public ProductAvailabilityCheckResponse checkProductAvailability(@PathParam("id") LongParam productId,
+			@QueryParam("amount") @DefaultValue("1") IntParam requestedAmount) {
+
+		log.info("Checking availability for product with ID " + productId.get() + " for the amount of "
+				+ requestedAmount.get() + "...");
+		final int availableAmount = productRepository.getAvailableProductAmount(productId.get());
+
+		if (availableAmount == -1) {
+			final String msg = String.format("Product with ID %d does not exist...", productId.get());
+			throw new WebApplicationException(msg, Status.NOT_FOUND);
+		}
+
+		// TODO Ex1, Task2: Change MINIMAL_REMAINING_AMOUNT_NECESSARY
+		final int MINIMAL_REMAINING_AMOUNT_NECESSARY = 3;
+		return new ProductAvailabilityCheckResponse(productId.get(),
+				(availableAmount - requestedAmount.get() >= MINIMAL_REMAINING_AMOUNT_NECESSARY), requestedAmount.get());
+	}
+
+	@Path("/products/{id}/availability")
+	@PUT
+	@Timed
+	public BaseResponse updateProductAvailability(@PathParam("id") LongParam productId,
+			@QueryParam("amount") @DefaultValue("1") IntParam amount) {
+
+		log.info("Setting available amount for product with ID " + productId.get() + " to " + amount.get() + "...");
+		productRepository.setAvailableProductAmount(productId.get(), amount.get());
+
+		return new BaseResponse("OK", 200,
+				"Available amount for product with ID " + productId.get() + " successfully updated.");
+	}
+
+	// Product category resources
+
+	@Path("/categories")
+	@GET
+	@Timed
+	public List<ProductCategory> getCategories(@QueryParam("limit") @DefaultValue("20") IntParam limit) {
+		final List<ProductCategory> categories = productRepository.searchCategories(limit.get());
+
+		return categories;
+	}
+
+	@Path("/categories/{id}")
+	@GET
+	@Timed
+	public ProductCategory getCategoryById(@PathParam("id") LongParam categoryId) {
+		final ProductCategory category = productRepository.getCategoryById(categoryId.get());
+
+		if (category == null) {
+			final String msg = String.format("Category with ID %d does not exist...", categoryId.get());
+			throw new WebApplicationException(msg, Status.NOT_FOUND);
+		}
+
+		return category;
+	}
+
+	@Path("/categories")
+	@POST
+	@Timed
+	public BaseResponse createCategory(@NotNull @Valid ProductCategory category) {
+		final ProductCategory createdCategory = productRepository.storeCategory(category);
+
+		return new BaseResponse("OK", 201, "Category with ID " + createdCategory.getId() + " successfully created.");
+	}
+
+	@Path("/categories/{id}")
+	@PUT
+	@Timed
+	public BaseResponse updateCategory(@PathParam("id") LongParam categoryId,
+			@NotNull @Valid ProductCategory category) {
+		final ProductCategory updatedCategory = productRepository.updateCategory(categoryId.get(), category);
+
+		return new BaseResponse("OK", 204, "Category with ID " + updatedCategory.getId() + " successfully updated.");
+	}
+
+	@Path("/categories/{id}")
+	@DELETE
+	@Timed
+	public BaseResponse deleteCategory(@PathParam("id") LongParam categoryId) {
+		final boolean deleted = productRepository.deleteCategoryById(categoryId.get());
+
+		return new BaseResponse(deleted ? "OK" : "FAILED", deleted ? 202 : 400,
+				deleted ? "Category with ID " + categoryId.get() + " successfully deleted."
+						: "Failed to delete category with ID " + categoryId.get() + ".");
 	}
 }

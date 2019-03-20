@@ -32,6 +32,8 @@ import webshop.categories.db.ProductCategoryRepository;
 @Produces(MediaType.APPLICATION_JSON)
 public class ProductCategoryResource {
 
+	// TODO Ex2, Task1: Extend this class with category resource functionality from the ProductSrv
+
 	private ProductCategoryRepository categoryRepository;
 	private Logger log;
 
@@ -39,61 +41,6 @@ public class ProductCategoryResource {
 		this.categoryRepository = repository;
 		this.log = LoggerFactory.getLogger(ProductCategoryResource.class);
 		log.info("ProductCategoryResource instantiated...");
-	}
-
-	// Product category resources
-
-	@Path("/categories")
-	@GET
-	@Timed
-	public List<ProductCategory> getCategories(@QueryParam("limit") @DefaultValue("20") IntParam limit) {
-		final List<ProductCategory> categories = categoryRepository.searchCategories(limit.get());
-
-		return categories;
-	}
-
-	@Path("/categories/{id}")
-	@GET
-	@Timed
-	public ProductCategory getCategoryById(@PathParam("id") LongParam categoryId) {
-		final ProductCategory category = categoryRepository.getCategoryById(categoryId.get());
-
-		if (category == null) {
-			final String msg = String.format("Category with ID %d does not exist...", categoryId.get());
-			throw new WebApplicationException(msg, Status.NOT_FOUND);
-		}
-
-		return category;
-	}
-
-	@Path("/categories")
-	@POST
-	@Timed
-	public BaseResponse createCategory(@NotNull @Valid ProductCategory category) {
-		final ProductCategory createdCategory = categoryRepository.storeCategory(category);
-
-		return new BaseResponse("OK", 201, "Category with ID " + createdCategory.getId() + " successfully created.");
-	}
-
-	@Path("/categories/{id}")
-	@PUT
-	@Timed
-	public BaseResponse updateCategory(@PathParam("id") LongParam categoryId,
-			@NotNull @Valid ProductCategory category) {
-		final ProductCategory updatedCategory = categoryRepository.updateCategory(categoryId.get(), category);
-
-		return new BaseResponse("OK", 204, "Category with ID " + updatedCategory.getId() + " successfully updated.");
-	}
-
-	@Path("/categories/{id}")
-	@DELETE
-	@Timed
-	public BaseResponse deleteCategory(@PathParam("id") LongParam categoryId) {
-		final boolean deleted = categoryRepository.deleteCategoryById(categoryId.get());
-
-		return new BaseResponse(deleted ? "OK" : "FAILED", deleted ? 202 : 400,
-				deleted ? "Category with ID " + categoryId.get() + " successfully deleted."
-						: "Failed to delete category with ID " + categoryId.get() + ".");
 	}
 
 }

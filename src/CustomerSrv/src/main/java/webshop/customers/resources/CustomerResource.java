@@ -112,7 +112,8 @@ public class CustomerResource {
 
 		// 1 --> best rating
 		// 6 --> worst rating
-		final int WORST_ALLOWED_RATING = 4;
+		// TODO Ex1, Task1: Change WORST_ALLOWED_RATING
+		final int WORST_ALLOWED_RATING = 3;
 		return new CreditRatingCheckResponse(customerId.get(), (rating <= WORST_ALLOWED_RATING));
 	}
 }

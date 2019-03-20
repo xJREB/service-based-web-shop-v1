@@ -42,7 +42,8 @@ public class OrderResource {
 	private Client restClient;
 	private Logger log;
 	private final String CREDIT_RATING_CHECK_ENDPOINT = "http://localhost:8000";
-	private final String PRODUCT_AVAILABILITY_CHECK_ENDPOINT = "http://localhost:8070";
+	// TODO Ex2, Task3: Change to the URL of the new WarehouseSrv
+	private final String PRODUCT_AVAILABILITY_CHECK_ENDPOINT = "http://localhost:8050";
 
 	public OrderResource(OrderRepository repository, Client restClient) {
 		this.orderRepository = repository;
@@ -115,12 +116,7 @@ public class OrderResource {
 				final Order createdOrder = orderRepository.store(order);
 				log.info("Order with ID " + createdOrder.getId() + " successfully created.");
 
-				// Invoking the NotificationSrv to send a SIMILAR_PRODUCTS_MAIL for the new
-				// order
-				MarketingMailRequest marketingMailRequest = new MarketingMailRequest("SIMILAR_PRODUCTS_MAIL",
-						createdOrder);
-				Invocation.Builder request = restClient.target("http://localhost:8010/marketing-mails").request();
-				request.post(Entity.json(marketingMailRequest), BaseResponse.class);
+				// TODO Ex1, Task3: Invoke NotificationSrv to send marketing mail
 
 				// Return final response
 				return new BaseResponse("OK", 201, "Order with ID " + createdOrder.getId() + " successfully created.");
